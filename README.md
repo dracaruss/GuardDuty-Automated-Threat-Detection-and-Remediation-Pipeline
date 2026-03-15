@@ -11,8 +11,8 @@
 
  
 ## Architecture
-GuardDuty Finding → EventBridge Rule → Lambda Function → SNS Email to Security Team + DynamoDB Audit Record + CloudWatch Dashboard
-
+GuardDuty Finding → EventBridge → Lambda → SNS Email to Security Team + DynamoDB Audit Record + CloudWatch
+<img width="2016" height="2134" alt="Image" src="https://github.com/user-attachments/assets/90e65b4d-dd8e-4b8f-b4d9-081c09760bc7" />
 
 ## Remediation Scenarios
 | Threat                | GuardDuty Finding                            | Automated Response                     |
