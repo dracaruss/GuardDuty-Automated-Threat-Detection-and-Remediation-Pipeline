@@ -1,25 +1,25 @@
 # GuardDuty Threat Detection and Automated Remediation
  
 ## Overview
-A complete threat detection and automated response system using AWS GuardDuty.
-When GuardDuty detects a threat, EventBridge routes the finding to Lambda
-functions that automatically remediate, alert the security team via SNS,
-and log the action to DynamoDB for audit.
+> [!IMPORTANT]
+> Overview
+> This project builds a complete threat detection and automated response system using AWS GuardDuty.  
+>
+> When GuardDuty detects a threat, EventBridge routes the finding to Lambda functions that automatically remediate the issue, send an SNS alert to the security team, and log the action to a DynamoDB audit table. A CloudWatch dashboard provides real-time visibility into all findings and remediation actions.  
+>
+> This follows the Provision, Break, Detect, Respond lifecycle. You Terraform the infrastructure, intentionally create security issues, GuardDuty detects them, and Lambda auto-remediates before a human needs to intervene.
+
  
 ## Architecture
-GuardDuty Finding -> EventBridge Rule -> Lambda Remediation -> SNS + DynamoDB
- 
+GuardDuty Finding → EventBridge Rule → Lambda Function → SNS Email to Security Team + DynamoDB Audit Record + CloudWatch Dashboard
+
+
 ## Remediation Scenarios
-| Threat | GuardDuty Finding | Automated Response |
-|--------|-------------------|-------------------|
-| Crypto mining on EC2 | CryptoCurrency:EC2/BitcoinTool.B!DNS | Quarantine SG, EBS snapshot, tag |
-| S3 bucket made public | Policy:S3/BucketBlockPublicAccessDisabled | Re-enable public access block |
-| Compromised IAM creds | UnauthorizedAccess:IAMUser/MaliciousIPCaller | Disable access keys |
- 
-## Prerequisites
-- AWS account with Identity Center SSO configured
-- Terraform >= 1.0
-- AWS CLI with SSO profile
+| Threat                | GuardDuty Finding                            | Automated Response                     |
+|-----------------------|----------------------------------------------|----------------------------------------|
+| Crypto mining on EC2  | CryptoCurrency:EC2/BitcoinTool.B!DNS         | Quarantine SG, EBS snapshot, tag       |
+| S3 bucket made public | Policy:S3/BucketBlockPublicAccessDisabled    | Re-enable public access block          |
+| Compromised IAM creds | UnauthorizedAccess:IAMUser/MaliciousIPCaller | Disable access keys                    |
  
 ## Deployment
 ```bash
@@ -28,7 +28,9 @@ terraform init
 terraform plan
 terraform apply
 ```
- 
+On the plan I got an error because I already had GuardDuty running in my account:
+<img width="1164" height="246" alt="Image" src="https://github.com/user-attachments/assets/bb7fee20-57ff-4c12-a62a-96de5ac262fd" />
+
 ## Testing
 ```bash
 # Generate sample findings to trigger the pipeline
