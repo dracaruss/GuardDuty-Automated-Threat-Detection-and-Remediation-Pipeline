@@ -1,9 +1,7 @@
 # GuardDuty Threat Detection and Automated Remediation
- 
+This project builds a complete threat detection and automated response system using AWS GuardDuty.
 ## Overview
 > [!IMPORTANT]
-> > This project builds a complete threat detection and automated response system using AWS GuardDuty.  
->
 > When GuardDuty detects a threat, EventBridge routes the finding to Lambda functions that automatically remediate the issue, send an SNS alert to the security team, and log the action to a DynamoDB audit table. A CloudWatch dashboard provides real-time visibility into all findings and remediation actions.  
 >
 > This follows the Provision, Break, Detect, Respond lifecycle. You Terraform the infrastructure, intentionally create security issues, GuardDuty detects them, and Lambda auto-remediates before a human needs to intervene.
@@ -82,7 +80,8 @@ Same with the second S3 email:
 
 ##
 
-But I realize no more emails came in. There were 6 alerts, so why just 3 emails? Hmm. When I checked the logs I saw:  
+> [!WARNING]
+> But I realize no more emails came in. There were 6 alerts, so why just 3 emails? Hmm. When I checked the logs I saw:  
 ```Bash
 $ aws logs tail /aws/lambda/guardduty-ec2-remediation --since 30m --profile guardduty-lab
 ```
@@ -90,7 +89,8 @@ $ aws logs tail /aws/lambda/guardduty-ec2-remediation --since 30m --profile guar
 
 ##
 
-Checking the logs showed only 3 items.. hmm:
+> [!WARNING]
+> Checking the logs showed only 3 items.. hmm:
 ```
 $ aws dynamodb scan --table-name guardduty-remediation-audit
 ```
@@ -98,7 +98,8 @@ $ aws dynamodb scan --table-name guardduty-remediation-audit
 
 ##
 
-I see the issue. This return statement is exiting the entire Lambda function immediately. So when *describe_instances* failed on the fake instance ID, the 500 code hits and breaks the lambda execution:
+> [!WARNING]
+> I see the issue. This return statement is exiting the entire Lambda function immediately. So when *describe_instances* failed on the fake instance ID, the 500 code hits and breaks the lambda execution:
 ```Bash
 pythonreturn {"statusCode": 500, "body": str(e)}
 ```
