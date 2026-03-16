@@ -31,28 +31,109 @@ terraform apply
 On the plan I got an error because I already had GuardDuty running in my account:
 <img width="1164" height="246" alt="Image" src="https://github.com/user-attachments/assets/bb7fee20-57ff-4c12-a62a-96de5ac262fd" />
 
+I just had to import it into the Terraform state. First I needed to get the details from the CLI:
+<img width="710" height="135" alt="Image" src="https://github.com/user-attachments/assets/1d5f184c-afdd-4772-9c8d-27aaa545b010" />
+
+Then import it into Terraform for it to be tracked and managed:
+<img width="1087" height="384" alt="Image" src="https://github.com/user-attachments/assets/cbe12700-bd8c-4f7a-829b-eb0846d8d09b" />
+
+And lastly re-run **Terraform apply**:
+<img width="1048" height="340" alt="Image" src="https://github.com/user-attachments/assets/9cc03109-ba27-466c-ad9b-2a6cf41db24e" />
+
 ## Testing
+After everything is configured and running in AWS, it's time to run the first script.  
+This script is setup to trigger the GuardDuty function that similates threats, to test that it's working correctly.
 ```bash
 # Generate sample findings to trigger the pipeline
 cd testing/
 chmod +x generate-sample-findings.sh
 ./generate-sample-findings.sh
 ```
- 
-## Validate
-```bash
-# Check DynamoDB for audit records
-aws dynamodb scan --table-name guardduty-remediation-audit --profile guardduty-lab
- 
-# Check CloudWatch dashboard
-echo $(terraform output -raw dashboard_url)
+<img width="1282" height="233" alt="Image" src="https://github.com/user-attachments/assets/08f283fd-7b58-4afa-86db-cbfecebd6132" />
+
+I got the first email from the pipeline, which was concerning the IAM issue
+<img width="1195" height="483" alt="Image" src="https://github.com/user-attachments/assets/feb26526-4b6f-4c80-bd24-15a469537c0f" />
+
+The pipeline is now validated to be working perfectly.  
+Here's what happened:
+- The sample finding used a fake username "GeneratedFindingUserName" which doesn't exist in your account.
+- So the Lambda triggered correctly, tried to disable the keys, couldn't find the user (because it's fake), logged the failure, and still sent the SNS email with the full details.  
+That proves the entire chain works:
+> [!IMPORTANT]
+> GuardDuty finding → EventBridge matched the **UnauthorizedAccess:IAMUser/** prefix → IAM Lambda triggered → attempted remediation → SNS email delivered.
+> 
+> The *"FAILED to disable keys"* is expected behavior with sample findings. If this were a real finding with a real username, it would have successfully disabled the keys.  
+<br>
+The next 2 emails were regarding the S3 "incidents"  
+<img width="1182" height="412" alt="Image" src="https://github.com/user-attachments/assets/f4038665-67d7-4402-971d-b2287bd5cf92" />
+
+> [!NOTE]
+> As seen in the email, "example-bucket1" is a fake bucket name that GuardDuty generates in sample findings.
+> It's not a real bucket in the AWS account, so the Lambda can't modify it. The bucket has to actually exist in your account for that permission to work.
+
+Same with the second S3 email:
+<img width="1177" height="415" alt="Image" src="https://github.com/user-attachments/assets/25832e0c-95ec-4471-a02c-75a5a4933d2c" />
+
+But I realize no more emails came in. There were 6 alerts, so why just 3 emails? Hmm. When I checked the logs I saw:  
+```Bash
+$ aws logs tail /aws/lambda/guardduty-ec2-remediation --since 30m --profile guardduty-lab
 ```
+<img width="1526" height="355" alt="Image" src="https://github.com/user-attachments/assets/95ad1c1e-f17a-4a0b-906f-1be251997acd" />
+
+Checking the logs showed only 3 items.. hmm:
+```
+$ aws dynamodb scan --table-name guardduty-remediation-audit
+```
+<img width="732" height="402" alt="Image" src="https://github.com/user-attachments/assets/e65dbbbc-053c-4d12-9a1c-c08240680b4b" />
+
+I see the issue. This return statement is exiting the entire Lambda function immediately. So when *describe_instances* failed on the fake instance ID, the 500 code hits and breaks the lambda execution:
+```Bash
+pythonreturn {"statusCode": 500, "body": str(e)}
+```
+<img width="625" height="205" alt="Image" src="https://github.com/user-attachments/assets/d3a090f3-3ca4-4d69-a5b9-82d34417e40c" />
+> [!NOTE]
+> And that was it, function over. Everything below that line (quarantine, snapshot, tag, SNS, DynamoDB) never executed. The Lambda reported back to AWS "I'm done" and shut down.
+
+I had to change the *lambda_ec2_remediation.tf* file to not error out with the 500 and shut off the script:
+<img width="825" height="227" alt="Image" src="https://github.com/user-attachments/assets/5f0cddcf-57ce-4b75-b854-8b991297b331" />
+> [!NOTE]
+> The fix replaces that hard exit with a soft failure: log what went wrong, skip the steps that depend on having a real instance, but keep going until SNS and DynamoDB are done. The function always reaches the bottom now.
+Now when I re run the script I get 8 findings now (5 new):
+> <img width="749" height="360" alt="Image" src="https://github.com/user-attachments/assets/324c2f8c-bdfc-4fa0-854b-0ec4085e1eb1" />
+
+And I get the 5 emails:
+<img width="1065" height="277" alt="Image" src="https://github.com/user-attachments/assets/a71c437c-e133-4877-9503-1ddb4619cb8a" />
+
+## Lastly to test the Remediation Pipeline with a real event
+First I create the test bucket and the access block resources:
+<img width="767" height="447" alt="Image" src="https://github.com/user-attachments/assets/164b43f0-5255-4ffa-87d3-32ad91c4fa1f" />
+
+Next I remove public access block to trigger GuardDuty and the pipeline:
+```Bash
+$ aws s3api delete-public-access-block \
+  --bucket $(terraform output -raw test_bucket_name) \
+  --profile guardduty-lab
+```
+
+Checking for the successful removal of the blocks shows no blocks are now on:
+```
+$ aws s3api get-public-access-block --bucket guardduty-test-20260315221759506200000001 --profile guardduty-lab
+```
+<img width="863" height="176" alt="Image" src="https://github.com/user-attachments/assets/c516d1e9-b501-4bc7-b258-ec185428278c" />
+
+And correctly the email arrives, showing the pipeline had re-enabled the public access block:
+<img width="855" height="341" alt="Image" src="https://github.com/user-attachments/assets/11cf4ef9-f0c3-4042-832e-f15406bf2bef" />
+
+Now when I check for the public block, I can see it's there re-enabled by the pipeline:
+<img width="1136" height="195" alt="Image" src="https://github.com/user-attachments/assets/0873d626-eb6a-4553-8f9f-fc40a24dcffe" />
  
-## Cleanup
-```bash
+## Ok everything works, just to cleanup
+```Bash
 terraform destroy -auto-approve
 ```
- 
+<img width="693" height="190" alt="Image" src="https://github.com/user-attachments/assets/e09a0e0e-e882-4f29-9aba-37f8e85fe185" />
+
+
 ## Design Decisions
 - One Lambda per finding category for single-responsibility and independent scaling
 - SNS notification sent from inside the Lambda (not a separate EventBridge target)
