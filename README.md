@@ -138,7 +138,7 @@ The second IAM finding CredentialAccess:IAMUser/AnomalousBehavior gets merged wi
 
 ##
 
-## Lastly To Test The Remediation Pipeline With A Real Event
+## Lastly to Test the Remediation Pipeline with a Real Event
 First I create the test bucket and the access block resources:
 <img width="767" height="447" alt="Image" src="https://github.com/user-attachments/assets/164b43f0-5255-4ffa-87d3-32ad91c4fa1f" />
 
@@ -169,7 +169,7 @@ And correctly the email arrives, showing the pipeline had re-enabled the public 
 Now when I check for the public block, I can see it's there re-enabled by the pipeline:
 <img width="1136" height="195" alt="Image" src="https://github.com/user-attachments/assets/0873d626-eb6a-4553-8f9f-fc40a24dcffe" />
  
-## Ok Everything Works, Just To Cleanup
+## Ok Everything Works, Just to Cleanup
 ```Bash
 terraform destroy -auto-approve
 ```
