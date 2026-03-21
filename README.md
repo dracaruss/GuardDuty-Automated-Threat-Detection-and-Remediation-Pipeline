@@ -39,7 +39,8 @@ And lastly re-run **Terraform apply**:
 
 ## Testing
 After everything is configured and running in AWS, it's time to run the first script.  
-This script is setup to trigger the GuardDuty function that similates threats, to test that it's working correctly.
+This script is setup to trigger the GuardDuty function that similates threats, to test that it's working correctly.  
+> GuardDuty → EventBridge: AWS handles this automatically
 ```bash
 # Generate sample findings to trigger the pipeline
 cd testing/
