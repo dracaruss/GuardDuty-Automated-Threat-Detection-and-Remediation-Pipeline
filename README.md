@@ -40,7 +40,10 @@ And lastly re-run **Terraform apply**:
 ## Testing
 After everything is configured and running in AWS, it's time to run the first script.  
 This script is setup to trigger the GuardDuty function that similates threats, to test that it's working correctly.  
-> GuardDuty → EventBridge: AWS handles this automatically
+> GuardDuty → EventBridge: AWS handles this automatically.
+> GuardDuty sends to EventBridge automatically by default — it's built into the service, no configuration required on your part.
+>  
+> *It's actually one of the clever things about GuardDuty's design. The moment a finding is generated, AWS publishes it to the default event bus in EventBridge automatically. You don't enable it, configure an integration, or set up any forwarding rules. It just happens.*
 ```bash
 # Generate sample findings to trigger the pipeline
 cd testing/
