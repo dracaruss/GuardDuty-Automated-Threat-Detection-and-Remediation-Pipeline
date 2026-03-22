@@ -44,6 +44,11 @@ This script is setup to trigger the GuardDuty function that similates threats, t
 > GuardDuty sends to EventBridge automatically by default — it's built into the service, no configuration required on your part.
 >  
 > *It's actually one of the clever things about GuardDuty's design. The moment a finding is generated, AWS publishes it to the default event bus in EventBridge automatically. You don't enable it, configure an integration, or set up any forwarding rules. It just happens.*
+>
+> Once you turn on the detector, GuardDuty automatically starts analyzing three log sources without you touching them:
+> 1. CloudTrail management events - API calls across your account.
+> 2. VPC Flow Logs - network traffic in and out of your instances.
+> 3. DNS query logs - DNS lookups made by resources in your VPC.  
 ```bash
 # Generate sample findings to trigger the pipeline
 cd testing/
