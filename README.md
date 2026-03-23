@@ -42,8 +42,10 @@ After everything is configured and running in AWS, it's time to run the first sc
 This script is setup to trigger the GuardDuty function that similates threats, to test that it's working correctly.  
 > GuardDuty → EventBridge: AWS handles this automatically.
 > GuardDuty sends to EventBridge automatically by default — it's built into the service, no configuration required on your part.
+>
+> *EventBridge is always running in every AWS account. It's the default event bus that every AWS service publishes to automatically. You don't create it, you don't enable it, you don't pay for it to exist. It's just there. What you create are rules that tap into it. *
 >  
-> *It's actually one of the clever things about GuardDuty's design. The moment a finding is generated, AWS publishes it to the default event bus in EventBridge automatically. You don't enable it, configure an integration, or set up any forwarding rules. It just happens.*
+> *It's actually one of the clever things about GuardDuty's design in AWS also. The moment a finding is generated, AWS publishes it to the default event bus in EventBridge automatically. You don't enable it, configure an integration, or set up any forwarding rules. It just happens.*
 >
 > Once you turn on the detector, GuardDuty automatically starts analyzing three log sources without you touching them:
 > 1. CloudTrail management events - API calls across your account.
