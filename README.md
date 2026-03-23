@@ -43,7 +43,7 @@ This script is setup to trigger the GuardDuty function that similates threats, t
 > GuardDuty → EventBridge: AWS handles this automatically.
 > GuardDuty sends to EventBridge automatically by default — it's built into the service, no configuration required on your part.
 >
-> *EventBridge is always running in every AWS account. It's the default event bus that every AWS service publishes to automatically. You don't create it, you don't enable it, you don't pay for it to exist. It's just there. What you create are rules that tap into it. *
+> *EventBridge is always running in every AWS account. It's the default event bus that every AWS service publishes to automatically. You don't create it, you don't enable it, you don't pay for it to exist. It's just there. What you create are rules that tap into it.*
 >  
 > *It's actually one of the clever things about GuardDuty's design in AWS also. The moment a finding is generated, AWS publishes it to the default event bus in EventBridge automatically. You don't enable it, configure an integration, or set up any forwarding rules. It just happens.*
 >
